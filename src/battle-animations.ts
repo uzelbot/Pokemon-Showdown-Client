@@ -60,6 +60,8 @@ class BattleScene {
 	$messagebar: JQuery = null!;
 	$delay: JQuery = null!;
 	$hiddenMessage: JQuery = null!;
+	$tooltips: JQuery = null!;
+	tooltips: BattleTooltips;
 
 	sideConditions: [{[id: string]: Sprite[]}, {[id: string]: Sprite[]}] = [{}, {}];
 
@@ -109,6 +111,8 @@ class BattleScene {
 			numericId = Math.floor(Math.random() * 1000000);
 		}
 		this.numericId = numericId;
+		this.tooltips = new BattleTooltips(battle);
+		this.tooltips.listen($frame[0]);
 
 		this.preloadEffects();
 		// reset() is called during battle initialization, so it doesn't need to be called here
@@ -156,6 +160,24 @@ class BattleScene {
 		this.$messagebar = $('<div class="messagebar message"></div>');
 		this.$delay = $('<div></div>');
 		this.$hiddenMessage = $('<div class="message" style="position:absolute;display:block;visibility:hidden"></div>');
+		this.$tooltips = $('<div class="tooltips"></div>');
+
+		let tooltipBuf = '';
+		const tooltips = {
+			p2c: {top: 70, left: 250, width: 80, height: 100, tooltip: 'activepokemon|1|2'},
+			p2b: {top: 85, left: 320, width: 90, height: 100, tooltip: 'activepokemon|1|1'},
+			p2a: {top: 90, left: 390, width: 100, height: 100, tooltip: 'activepokemon|1|0'},
+			p1a: {top: 200, left: 130, width: 120, height: 160, tooltip: 'activepokemon|0|0'},
+			p1b: {top: 200, left: 250, width: 150, height: 160, tooltip: 'activepokemon|0|1'},
+			p1c: {top: 200, left: 350, width: 150, height: 160, tooltip: 'activepokemon|0|2'},
+		};
+		for (const id in tooltips) {
+			let layout = tooltips[id as 'p1a'];
+			tooltipBuf += `<div class="has-tooltip" style="position:absolute;`;
+			tooltipBuf += `top:${layout.top}px;left:${layout.left}px;width:${layout.width}px;height:${layout.height}px;`;
+			tooltipBuf += `" data-id="${id}" data-tooltip="${layout.tooltip}" data-ownheight="1"></div>`;
+		}
+		this.$tooltips.html(tooltipBuf);
 
 		this.$battle.append(this.$bg);
 		this.$battle.append(this.$terrain);
@@ -170,6 +192,7 @@ class BattleScene {
 		this.$battle.append(this.$messagebar);
 		this.$battle.append(this.$delay);
 		this.$battle.append(this.$hiddenMessage);
+		this.$battle.append(this.$tooltips);
 
 		if (!this.animating) {
 			this.$battle.append('<div class="seeking"><strong>seeking...</strong></div>');
@@ -557,7 +580,7 @@ class BattleScene {
 		} else {
 			let statustext = '';
 			if (pokemon.hp !== pokemon.maxhp) {
-				statustext += pokemon.hpDisplay();
+				statustext += Pokemon.getHPText(pokemon);
 			}
 			if (pokemon.status) {
 				if (statustext) statustext += '|';
